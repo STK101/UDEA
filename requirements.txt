@@ -1,0 +1,6 @@
+argparse
+pandas
+rsome
+gurobipy
+cvxpy
+numpy
