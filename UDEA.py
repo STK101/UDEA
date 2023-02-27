@@ -127,7 +127,7 @@ def UDEA(X,Y,convTol, maxUncrty, delta, alpha, eps,ids,job_num, return_dict,noin
                         exitflag += np.linalg.norm(sigma_new)
                         sigma = ((sigma_new)/(np.linalg.norm(sigma_new)))*maxUncrty
                     elif (abs(eff_func(sigma) - eff_func(sigma_new)) < convTol):
-                        exitflag += 3
+                        exitflag += np.linalg.norm(sigma)
                     searchFlag = False
                 else:
                     ucrty_gain = np.linalg.norm(sigma_new) - np.linalg.norm(sigma)
