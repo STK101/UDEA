@@ -45,7 +45,7 @@ def forward_difference(func, sigma, eps = 1e-4,maxUncrty = 1):
 def sigma_enhancer(sigma, h, der_m,env):
     #der_m is column too
     n = len(h)# h is column matrix
-    if (np.linalg.norm(der_m) < 1e-8 or np.linalg.norm(h) < 1e-8):
+    if (np.linalg.norm(der_m) < 1e-9 or np.linalg.norm(h) < 1e-9):
         return [0.]*n
     x = cp.Variable(n)
     soc_constraints = [cp.SOC(1, x), h.T @ x == 0 ]
