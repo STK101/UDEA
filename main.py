@@ -3,8 +3,11 @@ import argparse
 import misc
 import pandas as pd
 import gurobipy
+import dill as pickle
+
 def parse_args():
     parser = argparse.ArgumentParser(description='UDEA Parameters')
+    parser.add_argument('--dataset',type=int,required=False, default=0)
     parser.add_argument('--convTol',type=float,required=False, default=1e-8)
     parser.add_argument('--maxUncrty',type=float,required=False, default=0)
     parser.add_argument('--delta',type=float,required=False, default=0.1)
@@ -23,11 +26,16 @@ if __name__ == "__main__":
         "LICENSEID": 937219,
         }
         env = gurobipy.Env(params=params)
-    X,Y = misc.process_dataset('period1.csv')
-    out = UDEA.UDEA_parallelized(X,Y,args.convTol,args.maxUncrty,args.delta,args.alpha,args.eps)
+    else:
+        env = gurobipy.Env() 
+    if (args.dataset == 0 ):
+        X,Y = misc.process_dataset('period1.csv',args.dataset)
+    else:
+        X,Y = misc.process_dataset('toy.csv',args.dataset)
+    out = UDEA.UDEA_parallelized(X,Y,args.convTol,args.maxUncrty,args.delta,args.alpha,args.eps,env)
     df_out = pd.DataFrame(columns=["efficiency", "uncertainity", "capability", "exit_flag", "noinal_eff"])
     for x in range(len(out)):
-        dic = out[x]
+        dic = list(out)[x]
         for i in range(len(dic)):
             df_out.loc[list(dic.keys())[i]] = list(dic.values())[i]
     df_out.index += 1

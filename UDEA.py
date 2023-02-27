@@ -4,12 +4,15 @@ import pandas as pd
 import misc
 import RobustDEA
 #from tqdm import tqdm as tqdm
-from multiprocessing import Process
-import multiprocessing
+
+import multiprocess as multiprocessing
+from multiprocess import Process
+import dill as pickle
+
 def m(sigma, R_set):
     pass
 
-def UDEA_parallelized(X,Y,convTol, maxUncrty, delta, alpha, eps):
+def UDEA_parallelized(X,Y,convTol, maxUncrty, delta, alpha, eps, env):
     # we use 6 parralel processes
     D = len(X)
     '''
@@ -30,12 +33,12 @@ def UDEA_parallelized(X,Y,convTol, maxUncrty, delta, alpha, eps):
     a6 = (np.arange(5,D,6)).tolist()
     return_dict = (multiprocessing.Manager()).dict()
     #func_temp = lambda ids,jn,return_dict : UDEA(X,Y,convTol, maxUncrty, delta, alpha, eps,ids,jn,return_dict)
-    p1 = Process(target=UDEA, args=(X,Y,convTol, maxUncrty, delta, alpha, eps,a1,1,return_dict,noinal_efficiency))
-    p2 = Process(target=UDEA, args=(X,Y,convTol, maxUncrty, delta, alpha, eps,a2,2,return_dict,noinal_efficiency))
-    p3 = Process(target=UDEA, args=(X,Y,convTol, maxUncrty, delta, alpha, eps,a3,3,return_dict,noinal_efficiency))
-    p4 = Process(target=UDEA, args=(X,Y,convTol, maxUncrty, delta, alpha, eps,a4,4,return_dict,noinal_efficiency))
-    p5 = Process(target=UDEA, args=(X,Y,convTol, maxUncrty, delta, alpha, eps,a5,5,return_dict,noinal_efficiency))
-    p6 = Process(target=UDEA, args=(X,Y,convTol, maxUncrty, delta, alpha, eps,a6,6,return_dict,noinal_efficiency))
+    p1 = Process(target=UDEA, args=(X,Y,convTol, maxUncrty, delta, alpha, eps,a1,1,return_dict,noinal_efficiency,env))
+    p2 = Process(target=UDEA, args=(X,Y,convTol, maxUncrty, delta, alpha, eps,a2,2,return_dict,noinal_efficiency,env))
+    p3 = Process(target=UDEA, args=(X,Y,convTol, maxUncrty, delta, alpha, eps,a3,3,return_dict,noinal_efficiency,env))
+    p4 = Process(target=UDEA, args=(X,Y,convTol, maxUncrty, delta, alpha, eps,a4,4,return_dict,noinal_efficiency,env))
+    p5 = Process(target=UDEA, args=(X,Y,convTol, maxUncrty, delta, alpha, eps,a5,5,return_dict,noinal_efficiency,env))
+    p6 = Process(target=UDEA, args=(X,Y,convTol, maxUncrty, delta, alpha, eps,a6,6,return_dict,noinal_efficiency,env))
     p1.start()
     p2.start()
     p3.start()
@@ -50,7 +53,7 @@ def UDEA_parallelized(X,Y,convTol, maxUncrty, delta, alpha, eps):
     p6.join()
     return return_dict.values()
 
-def UDEA(X,Y,convTol, maxUncrty, delta, alpha, eps,ids,job_num, return_dict,noinal_efficiency):
+def UDEA(X,Y,convTol, maxUncrty, delta, alpha, eps,ids,job_num, return_dict,noinal_efficiency,env):
     D = len(X) # D X N
     N = len(X[0])
     M = len(Y[0])
@@ -71,9 +74,9 @@ def UDEA(X,Y,convTol, maxUncrty, delta, alpha, eps,ids,job_num, return_dict,noin
             print("Done - ", i+1)
             continue
         if(noinal_efficiency[i] >= 1):
-            Ude_eff_uncrty_capability[i] = [1.,0.,2.,0, noinal_efficiency[i]]
+            Ude_eff_uncrty_capability[i] = [1.,0.,0.,0, noinal_efficiency[i]]
         else:
-            eff_func = lambda s : RobustDEA.get_robust_efficiency(X,Y,i, s)
+            eff_func = lambda s : RobustDEA.get_robust_efficiency(X,Y,i,s,env)
             searchFlag = True
             sigma = [0.]*(M + N)
             beta = 0.
@@ -102,7 +105,7 @@ def UDEA(X,Y,convTol, maxUncrty, delta, alpha, eps,ids,job_num, return_dict,noin
                 h = misc.forward_difference(eff_func,sigma, delta,maxUncrty)
                 der_m = misc.forward_difference(lambda x : np.linalg.norm(x),sigma, 1e-3,maxUncrty)
                 #print("sigma enhancer entered")
-                d = misc.sigma_enhancer(sigma,h,der_m)
+                d = misc.sigma_enhancer(sigma,h,der_m,env)
                 #print("sigma enhancer exited")
                 beta = misc.bisection01(d,eff_func,eps,sigma,1e-4,maxUncrty)
                 if(beta == 0):
@@ -124,21 +127,23 @@ def UDEA(X,Y,convTol, maxUncrty, delta, alpha, eps,ids,job_num, return_dict,noin
                         sigma = ((sigma_new)/(np.linalg.norm(sigma_new)))*maxUncrty
                     elif (abs(eff_func(sigma) - eff_func(sigma_new)) < convTol):
                         exitflag += 3
-
                     searchFlag = False
                 else:
                     ucrty_gain = np.linalg.norm(sigma_new) - np.linalg.norm(sigma)
                     eff_gain =  eff_func(sigma_new) - eff_func(sigma)
                     sigma = (sigma_new)
+                    if(eff_func(sigma_new) >= 1):
+                        searchFlag = False
+
                 itr_cap += 1
             if (itr_cap == 1e2):
                 exitflag = -1
             final_eff = eff_func(sigma)
             final_uncrty = np.linalg.norm(sigma)
             if (final_eff >= 1 and final_uncrty <= maxUncrty):
-                Ude_eff_uncrty_capability[i] = [1., final_uncrty , 0,exitflag,noinal_efficiency[i]]
+                Ude_eff_uncrty_capability[i] = [final_eff, final_uncrty , 0,exitflag,noinal_efficiency[i]]
             elif (final_eff >= 1 and final_uncrty > maxUncrty):
-                Ude_eff_uncrty_capability[i] = [1., final_uncrty , 1,exitflag,noinal_efficiency[i]]
+                Ude_eff_uncrty_capability[i] = [final_eff, final_uncrty , 1,exitflag,noinal_efficiency[i]]
             else:
                 Ude_eff_uncrty_capability[i] = [final_eff, final_uncrty , 2, exitflag,noinal_efficiency[i]]
                 

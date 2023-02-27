@@ -2,8 +2,10 @@ from rsome import ro
 from rsome import norm
 import numpy as np
 import pandas as pd
+import cvxpy as cp
 from rsome import grb_solver as grb
 import gurobipy
+import dill as pickle
 
 
 
@@ -23,11 +25,44 @@ def getABC(X,Y,i):
     C[-1,0] = 1
     return A, B, C
 
-def get_robust_efficiency(X,Y,i,sigma = None):
+def get_robust_efficiency(X,Y,i,sigma ,env  ):
     A,B,C = getABC(X,Y,i)
+    neta =  cp.Variable((len(X)+2))
+    soc_constraints = []
+    for x in range(len(A)):
+        A_x = A[x]
+        I = np.eye(len(A[0]))
+        if (x < len(Y[0])):
+            mat = np.zeros((len(X), len(A[0])))
+            np.fill_diagonal(mat,1)
+            mat[x,-2] = -1
+            soc_constraints.append(cp.SOC((-A_x.T @ neta), (sigma[x] * mat @ neta)))
+            #model.st(((A_x + sigma[x]*(z[x])@mat)@neta <= 0).forall(z_set0))
+        else:
+            mat = np.zeros((len(X), len(A[0])))
+            np.fill_diagonal(mat,1)
+            mat[x -len(Y[0]),-1] = -1
+            soc_constraints.append(cp.SOC((-A_x.T @ neta), (sigma[x] *mat @ neta)))
+            #model.st(((A_x + sigma[x]*(z[x])@mat)@neta <= 0).forall(z_set0))
+    zeros =  (np.zeros(len(X)+2))
+    neg_I =  -(np.eye((len(X)+2))).astype(float)
+    prob = cp.Problem(cp.Minimize(((C.T)[0]).T@neta),
+                    soc_constraints + [B[0].T@ neta == 1, B[1].T @ neta == 1, neg_I@neta <= zeros] )
+    try :
+        prob.solve(solver=cp.GUROBI , env = env)
+    except cp.error.SolverError:
+        return 1
+    try :
+        eff = (neta.value)[-1]
+    except TypeError:
+        eff = 1
+    if (eff > 1):
+        return 1
+    return eff
     '''
     if (not sigma):
         sigma = [0.5]*len(A[0])
+    '''
     '''
     model = ro.Model()
     neta = model.dvar((len(X)+2))
@@ -59,7 +94,7 @@ def get_robust_efficiency(X,Y,i,sigma = None):
     except RuntimeError:
         return -1
     return eff
-
+'''
 def DEA_eff(X,Y):
     eff_arr = []
     D = len(X)

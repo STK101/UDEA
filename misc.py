@@ -1,16 +1,24 @@
 import numpy as np
 import pandas as pd
 import cvxpy as cp
+import dill as pickle
 
-def process_dataset(path):
-    df = pd.read_csv(path, index_col= 0)
-    df['Annual Return'] = df['Annual Return'].apply(lambda x : float(x[:-1]))
-    df['Total Risk'] = df['Total Risk'].apply(lambda x : float(x[:-1]))
-    df['Abs. Win Rate'] = df['Abs. Win Rate'].apply(lambda x : 100 - float(x[:-1]))
-    if(min(df['Annual Return']) < 0):
-        df['Annual Return'] -= min(df['Annual Return'])
-    X = (df[['Total Risk','Abs. Win Rate']]).values.tolist()
-    Y = (df[['Annual Return']]).values.tolist()
+def process_dataset(path, ds = 0):
+    X = None
+    Y = None
+    if (ds == 0):
+        df = pd.read_csv(path, index_col= 0)
+        df['Annual Return'] = df['Annual Return'].apply(lambda x : float(x[:-1]))
+        df['Total Risk'] = df['Total Risk'].apply(lambda x : float(x[:-1]))
+        df['Abs. Win Rate'] = df['Abs. Win Rate'].apply(lambda x : 100 - float(x[:-1]))
+        if(min(df['Annual Return']) < 0):
+            df['Annual Return'] -= min(df['Annual Return'])
+        X = (df[['Total Risk','Abs. Win Rate']]).values.tolist()
+        Y = (df[['Annual Return']]).values.tolist()
+    elif (ds == 1):
+        df = pd.read_csv(path, index_col= 0)
+        X = (df[["IP1", "IP2"]]).values.tolist()
+        Y = (df[["OP1", "OP2"]]).values.tolist()
     return X,Y
 
 def forward_difference(func, sigma, eps = 1e-4,maxUncrty = 1):
@@ -34,7 +42,7 @@ def forward_difference(func, sigma, eps = 1e-4,maxUncrty = 1):
             del_func[i] = (-func(sigma) + func(sigma_new.tolist()))/(eps* pow((1/2),fact))
     return del_func
 
-def sigma_enhancer(sigma, h, der_m):
+def sigma_enhancer(sigma, h, der_m,env):
     #der_m is column too
     n = len(h)# h is column matrix
     if (sum(der_m == 0) == n):
@@ -42,7 +50,7 @@ def sigma_enhancer(sigma, h, der_m):
     x = cp.Variable(n)
     soc_constraints = [cp.SOC(1, x), h.T @ x == 0 ]
     prob = cp.Problem(cp.Minimize(der_m.T@x),soc_constraints)
-    prob.solve(solver=cp.GUROBI, TimeLimit = 2)
+    prob.solve(solver=cp.GUROBI,env= env)#, TimeLimit = 2)
     return x.value
 
 def bisection01(d,func,eps,sigma,Tol, maxUncrty = 1):  
