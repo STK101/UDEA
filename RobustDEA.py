@@ -113,13 +113,13 @@ def DEA_eff(X,Y,env):
         try :
             prob.solve(solver=cp.GUROBI , env = env)
         except cp.error.SolverError:
-            return 1
+            eff = 1
         try :
             eff = (neta.value)[-1]
         except TypeError:
             eff = 1
         if (eff > 1):
-            return 1
-        return eff
+            eff = 1
+        eff_arr.append(eff)
     return eff_arr
     
