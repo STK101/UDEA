@@ -100,30 +100,26 @@ def DEA_eff(X,Y):
     D = len(X)
     for i in range(D):
         A,B,C = getABC(X,Y,i)
-        '''
-        if (not sigma):
-            sigma = [0.5]*len(A[0])
-        '''
-        model = ro.Model()
-        neta = model.dvar((len(X)+2))
-        #z = [model.rvar((len(X))) for i in range(len(X[0]) + len(Y[0])) ]
-        #z_set0 = (norm(z[i],2) <= 1 for i in range(len(X[0]) + len(Y[0])) )
-        model.min((C.T)[0]@neta)
-        model.st(B[0]@ neta == 1,B[1] @ neta == 1 )
-        model.st(neta >= (np.zeros(len(X)+2)))
+        neta =  cp.Variable((len(X)+2))
+        constraints = []
         for x in range(len(A)):
             A_x = A[x]
-            I = np.eye(len(A[0]))
-            model.st(((A_x)@neta <= 0))
-            #model.st(((A_x)@neta <= 0))
-        try:
-            model.solve(grb,  display = False)
-        except gurobipy.GurobiError:
-            return -1
+            constraints.append(A_x.T @ neta <= 0)
+
+        zeros =  (np.zeros(len(X)+2))
+        neg_I =  -(np.eye((len(X)+2))).astype(float)
+        prob = cp.Problem(cp.Minimize(((C.T)[0]).T@neta),
+                        constraints + [B[0].T@ neta == 1, B[1].T @ neta == 1, neg_I@neta <= zeros] )
         try :
-            eff = (neta.get())[-1]
-        except RuntimeError:
-            return -1
-        eff_arr.append(eff)
+            prob.solve(solver=cp.GUROBI , env = env)
+        except cp.error.SolverError:
+            return 1
+        try :
+            eff = (neta.value)[-1]
+        except TypeError:
+            eff = 1
+        if (eff > 1):
+            return 1
+        return eff
     return eff_arr
     
