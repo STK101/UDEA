@@ -24,7 +24,7 @@ def UDEA_parallelized(X,Y,convTol, maxUncrty, delta, alpha, eps, env):
     '''
 
     noinal_efficiency = np.asarray(RobustDEA.DEA_eff(X,Y,env))
-    print(noinal_efficiency)
+    #print(noinal_efficiency)
     #np.savetxt('DEA_effs.txt', noinal_efficiency)
     a1 = (np.arange(0,D,6)).tolist()
     a2 = (np.arange(1,D,6)).tolist()
