@@ -14,6 +14,7 @@ def parse_args():
     parser.add_argument('--alpha',type=float,required=False, default=0.4)
     parser.add_argument('--eps',type=float,required=False, default=1e-8)
     parser.add_argument('--colab', type = int, required = False, default = 0)
+    parser.add_argument('--jobs', type = int, required = False, default = 6)
     args = parser.parse_args()
     return args
 
@@ -32,7 +33,7 @@ if __name__ == "__main__":
         X,Y = misc.process_dataset('period1.csv',args.dataset)
     else:
         X,Y = misc.process_dataset('toy.csv',args.dataset)
-    out = UDEA.UDEA_parallelized(X,Y,args.convTol,args.maxUncrty,args.delta,args.alpha,args.eps,env)
+    out = UDEA.UDEA_parallelized(X,Y,args.convTol,args.maxUncrty,args.delta,args.alpha,args.eps,env,args.jobs)
     df_out = pd.DataFrame(columns=["efficiency", "uncertainity", "capability", "exit_flag", "noinal_eff"])
     for x in range(len(out)):
         dic = list(out)[x]

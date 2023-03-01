@@ -35,13 +35,13 @@ def get_robust_efficiency(X,Y,i,sigma ,env  ):
         if (x < len(Y[0])):
             mat = np.zeros((len(X), len(A[0])))
             np.fill_diagonal(mat,1)
-            mat[x,-2] = -1
+            mat[-1,-2] = -1
             soc_constraints.append(cp.SOC((-A_x.T @ neta), (sigma[x] * mat @ neta)))
             #model.st(((A_x + sigma[x]*(z[x])@mat)@neta <= 0).forall(z_set0))
         else:
             mat = np.zeros((len(X), len(A[0])))
             np.fill_diagonal(mat,1)
-            mat[x -len(Y[0]),-1] = -1
+            mat[-1,-1] = -1
             soc_constraints.append(cp.SOC((-A_x.T @ neta), (sigma[x] *mat @ neta)))
             #model.st(((A_x + sigma[x]*(z[x])@mat)@neta <= 0).forall(z_set0))
     zeros =  (np.zeros(len(X)+2))

@@ -12,7 +12,7 @@ import dill as pickle
 def m(sigma, R_set):
     pass
 
-def UDEA_parallelized(X,Y,convTol, maxUncrty, delta, alpha, eps, env):
+def UDEA_parallelized(X,Y,convTol, maxUncrty, delta, alpha, eps, env, n_jobs = 6):
     # we use 6 parralel processes
     D = len(X)
     '''
@@ -26,6 +26,17 @@ def UDEA_parallelized(X,Y,convTol, maxUncrty, delta, alpha, eps, env):
     noinal_efficiency = np.asarray(RobustDEA.DEA_eff(X,Y,env))
     #print(noinal_efficiency)
     #np.savetxt('DEA_effs.txt', noinal_efficiency)
+    A = []
+    P = []
+    return_dict = (multiprocessing.Manager()).dict()
+    for i in range (0, n_jobs):
+        A.append((np.arange(i,D, n_jobs)).tolist())
+        P.append(Process(target=UDEA, args=(X,Y,convTol, maxUncrty, delta, alpha, eps,A[i],i+1,return_dict,noinal_efficiency,env)))
+    for i in range (0, n_jobs):
+        P[i].start()
+    for i  in range(0, n_jobs):
+        P[i].join()
+    '''
     a1 = (np.arange(0,D,6)).tolist()
     a2 = (np.arange(1,D,6)).tolist()
     a3 = (np.arange(2,D,6)).tolist()
@@ -52,6 +63,7 @@ def UDEA_parallelized(X,Y,convTol, maxUncrty, delta, alpha, eps, env):
     p4.join()
     p5.join()
     p6.join()
+    '''
     return return_dict.values()
 
 def UDEA(X,Y,convTol, maxUncrty, delta, alpha, eps,ids,job_num, return_dict,noinal_efficiency,env):
