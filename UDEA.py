@@ -96,7 +96,7 @@ def UDEA(X,Y,convTol, maxUncrty, delta, alpha, eps,ids,job_num, return_dict,noin
             d = [0.]*(M + N)
             exitflag = 0
             itr_cap = 0
-            while(searchFlag and itr_cap < 1e2):
+            while(searchFlag and itr_cap < 1e4):
                 #print("Loop entered", i+1)
                 #sigma = [0.]*(M + N)
                 #print("F Dif 1 ", i+1)
