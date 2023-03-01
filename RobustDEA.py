@@ -49,7 +49,7 @@ def get_robust_efficiency(X,Y,i,sigma ,env  ):
     prob = cp.Problem(cp.Minimize(((C.T)[0]).T@neta),
                     soc_constraints + [B[0].T@ neta == 1, B[1].T @ neta == 1, neg_I@neta <= zeros] )
     try :
-        prob.solve(solver=cp.GUROBI , env = env)
+        prob.solve()#solver=cp.GUROBI , env = env
     except cp.error.SolverError:
         return 1
     try :
@@ -111,7 +111,7 @@ def DEA_eff(X,Y,env):
         prob = cp.Problem(cp.Minimize(((C.T)[0]).T@neta),
                         constraints + [B[0].T@ neta == 1, B[1].T @ neta == 1, neg_I@neta <= zeros] )
         try :
-            prob.solve(solver=cp.GUROBI , env = env)
+            prob.solve()#solver=cp.GUROBI , env = env
         except cp.error.SolverError:
             eff = 1
         try :

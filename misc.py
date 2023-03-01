@@ -50,7 +50,7 @@ def sigma_enhancer(sigma, h, der_m,env):
     x = cp.Variable(n)
     soc_constraints = [cp.SOC(1, x), h.T @ x == 0 ]
     prob = cp.Problem(cp.Minimize(der_m.T@x),soc_constraints)
-    prob.solve(solver=cp.GUROBI,env= env)#, TimeLimit = 2)
+    prob.solve()#solver=cp.GUROBI,env= env TimeLimit = 2)
     return x.value
 
 def bisection01(d,func,eps,sigma,Tol, maxUncrty = 1):  
