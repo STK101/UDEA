@@ -12,7 +12,7 @@ import dill as pickle
 def m(sigma, R_set):
     pass
 
-def UDEA_parallelized(X,Y,convTol, maxUncrty, delta, alpha, eps, env, n_jobs = 6):
+def UDEA_parallelized(X,Y,convTol, maxUncrty, delta, alpha, eps, env, n_jobs ,sigma_cfg):
     # we use 6 parralel processes
     D = len(X)
     '''
@@ -31,7 +31,7 @@ def UDEA_parallelized(X,Y,convTol, maxUncrty, delta, alpha, eps, env, n_jobs = 6
     return_dict = (multiprocessing.Manager()).dict()
     for i in range (0, n_jobs):
         A.append((np.arange(i,D, n_jobs)).tolist())
-        P.append(Process(target=UDEA, args=(X,Y,convTol, maxUncrty, delta, alpha, eps,A[i],i+1,return_dict,noinal_efficiency,env)))
+        P.append(Process(target=UDEA, args=(X,Y,convTol, maxUncrty, delta, alpha, eps,A[i],i+1,return_dict,noinal_efficiency,env,sigma_cfg)))
     for i in range (0, n_jobs):
         P[i].start()
     for i  in range(0, n_jobs):
@@ -66,7 +66,7 @@ def UDEA_parallelized(X,Y,convTol, maxUncrty, delta, alpha, eps, env, n_jobs = 6
     '''
     return return_dict.values()
 
-def UDEA(X,Y,convTol, maxUncrty, delta, alpha, eps,ids,job_num, return_dict,noinal_efficiency,env):
+def UDEA(X,Y,convTol, maxUncrty, delta, alpha, eps,ids,job_num, return_dict,noinal_efficiency,env, sigma_cfg):
     D = len(X) # D X N
     N = len(X[0])
     M = len(Y[0])
@@ -89,9 +89,12 @@ def UDEA(X,Y,convTol, maxUncrty, delta, alpha, eps,ids,job_num, return_dict,noin
         if(noinal_efficiency[i] >= 1):
             Ude_eff_uncrty_capability[i] = [1.,0.,0.,0, noinal_efficiency[i]]
         else:
-            eff_func = lambda s : RobustDEA.get_robust_efficiency(X,Y,i,s,env)
+            eff_func = lambda s : RobustDEA.get_robust_efficiency(X,Y,i,s,env,sigma_cfg)
             searchFlag = True
-            sigma = [0.]*(M + N)
+            if(sigma_cfg == 0):
+                sigma = [0.]*(M + N)
+            else : 
+                sigma = [0.]
             beta = 0.
             d = [0.]*(M + N)
             exitflag = 0

@@ -25,24 +25,44 @@ def getABC(X,Y,i):
     C[-1,0] = 1
     return A, B, C
 
-def get_robust_efficiency(X,Y,i,sigma ,env  ):
+def get_robust_efficiency(X,Y,i,sigma ,env , sigma_cfg ):
+
     A,B,C = getABC(X,Y,i)
+    if (sigma_cfg == 0):
+        sigmac = sigma
+    else :
+        sigmac = [sigma[0]]*len(A)
+        file = open("arr", "rb")
+        arr1 = np.load(file)
     neta =  cp.Variable((len(X)+2))
     soc_constraints = []
+
     for x in range(len(A)):
         A_x = A[x]
         I = np.eye(len(A[0]))
         if (x < len(Y[0])):
-            mat = np.zeros((len(X), len(A[0])))
-            np.fill_diagonal(mat,1)
-            mat[x,-2] = -1
-            soc_constraints.append(cp.SOC((-A_x.T @ neta), (sigma[x] * mat @ neta)))
+            if (sigma_cfg == 0):
+                mat = np.zeros((len(X), len(A[0])))
+                np.fill_diagonal(mat,1)
+                mat[x,-2] = -1
+                soc_constraints.append(cp.SOC((-A_x.T @ neta), (sigmac[x] * mat @ neta)))
+            else:
+                mat = np.zeros((4, len(A[0])))
+                mat[:,0:-2] = np.array(arr1[x])
+                mat[:,-2] = -mat[:,i]
+                soc_constraints.append(cp.SOC((-A_x.T @ neta), (sigmac[x] * mat @ neta)))
             #model.st(((A_x + sigma[x]*(z[x])@mat)@neta <= 0).forall(z_set0))
         else:
-            mat = np.zeros((len(X), len(A[0])))
-            np.fill_diagonal(mat,1)
-            mat[x - len(Y[0]),-1] = -1
-            soc_constraints.append(cp.SOC((-A_x.T @ neta), (sigma[x] *mat @ neta)))
+            if (sigma_cfg == 0):
+                mat = np.zeros((len(X), len(A[0])))
+                np.fill_diagonal(mat,1)
+                mat[x - len(Y[0]),-1] = -1
+                soc_constraints.append(cp.SOC((-A_x.T @ neta), (sigmac[x] *mat @ neta)))
+            else:
+                mat = np.zeros((4, len(A[0])))
+                mat[:,0:-2] = np.array(arr1[x])
+                mat[:,-1] = -mat[:,i]
+                soc_constraints.append(cp.SOC((-A_x.T @ neta), (sigmac[x] * mat @ neta)))
             #model.st(((A_x + sigma[x]*(z[x])@mat)@neta <= 0).forall(z_set0))
     zeros =  (np.zeros(len(X)+2))
     neg_I =  -(np.eye((len(X)+2))).astype(float)

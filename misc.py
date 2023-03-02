@@ -19,6 +19,10 @@ def process_dataset(path, ds = 0):
         df = pd.read_csv(path, index_col= 0)
         X = (df[["IP1", "IP2"]]).values.tolist()
         Y = (df[["OP1", "OP2"]]).values.tolist()
+    elif (ds == 2):
+        df = pd.read_csv(path, index_col= 0)
+        X = (df[['Total Risk','Abs. Loss Rate']]).values.tolist()
+        Y = (df[['Annual Return']]).values.tolist()
     return X,Y
 
 def forward_difference(func, sigma, eps = 1e-4,maxUncrty = 1):

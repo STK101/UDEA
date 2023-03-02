@@ -15,6 +15,7 @@ def parse_args():
     parser.add_argument('--eps',type=float,required=False, default=1e-8)
     parser.add_argument('--colab', type = int, required = False, default = 0)
     parser.add_argument('--jobs', type = int, required = False, default = 6)
+    parser.add_argument('--sigma_cfg', type = int, required = False, default = 0)
     args = parser.parse_args()
     return args
 
@@ -31,9 +32,11 @@ if __name__ == "__main__":
         env = gurobipy.Env() 
     if (args.dataset == 0 ):
         X,Y = misc.process_dataset('period1.csv',args.dataset)
-    else:
+    elif (args.dataset == 1 ):
         X,Y = misc.process_dataset('toy.csv',args.dataset)
-    out = UDEA.UDEA_parallelized(X,Y,args.convTol,args.maxUncrty,args.delta,args.alpha,args.eps,env,args.jobs)
+    else:
+        X,Y = misc.process_dataset('periodall.csv',args.dataset)
+    out = UDEA.UDEA_parallelized(X,Y,args.convTol,args.maxUncrty,args.delta,args.alpha,args.eps,env,args.jobs,args.sigma_cfg)
     df_out = pd.DataFrame(columns=["efficiency", "uncertainity", "capability", "exit_flag", "noinal_eff"])
     for x in range(len(out)):
         dic = list(out)[x]
